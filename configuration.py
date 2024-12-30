@@ -1,0 +1,6 @@
+data_path = 'twitter-2024-12-22-63817e8a76ce4d8e9278696556deeaa87bf3aa5bbad26aab0fa3e0e61c544068/data/'
+tweets_file = 'tweets.js'
+tweets_cleaned_file = 'tweets_cleaned.json'
+tweets_csv_file = 'sorted_filtered_tweets.csv'
+media_folder = 'tweets_media'
+output_ebook_file = 'tweets_ebook'
