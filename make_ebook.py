@@ -1,7 +1,8 @@
 from pathlib import Path
 import pandas as pd
 from os.path import join as pathjoin
-from configuration import data_path, media_folder, tweets_csv_file, output_ebook_file
+from configuration import data_path, media_folder, tweets_csv_file, output_ebook_file, item_styles, style_key, \
+    color_palette
 import re
 
 # Paths to the input data and output folder
@@ -82,7 +83,7 @@ def embed_media(tweet_id_):
                 f"\\includegraphics[width=\\textwidth, height=\\textwidth, trim=50 50 50 50, clip]{{{media_files[1]}}}\n"
                 "\\caption{}\n"
                 "\\end{subfigure}\n"
-                "\\vspace{{0.5cm}}\n"
+                "\\hfill\n"
                 f"\\begin{{subfigure}}[b]{{0.48\\textwidth}}\n"
                 f"\\includegraphics[width=\\textwidth, height=\\textwidth, trim=50 50 50 50, clip]{{{media_files[2]}}}\n"
                 "\\caption{}\n"
@@ -109,26 +110,29 @@ def embed_media(tweet_id_):
 # LaTeX preamble for tcolorbox
 latex_preamble = r"""
 \usepackage{xeCJK}
-\setmainfont{Noto Sans}
-\setCJKmainfont{Noto Sans JP}
-\newfontface\emojifont{Noto Emoji}
+
+\usepackage{unicode-math} 
+\setmathfont{Noto Sans Math} 
+\setmainfont{DejaVu Sans Bold}
+\setCJKmainfont{Noto Sans Mono CJK SC}
+\newfontface\emojifont{Noto Color Emoji}
+\newfontface\mathfont{Noto Sans Math}
+
 \newcommand{\emoji}[1]{{\emojifont #1}}
+\newcommand{\charfont}[1]{{\mathfont #1}}
+
 
 \usepackage{float}
 \usepackage{subcaption}
 \usepackage{graphicx}
 
 \usepackage{xcolor}
-\usepackage{tcolorbox}
-\tcbset{
-    sharp corners,
-    colframe=blue!75!black,
-    colback=blue!10!white,
-    boxrule=1mm,
-    width=\textwidth,
-    enlarge left by=5mm
-}
+
 """
+
+latex_preamble += color_palette
+latex_preamble += item_styles.get(style_key, "")
+container_tag = style_key
 
 # Build the ebook content
 ebook_content = "---\nheader-includes: |\n  " + latex_preamble.replace("\n", "\n  ") + "\n---\n"
@@ -136,15 +140,33 @@ ebook_content += "# My Tweet Ebook\n\n"
 
 
 def preprocess_for_latex(content):
-    # Escape special LaTeX characters: # $ % & _ { } ~ ^ \
-    content = re.sub(r"([#\$%&_{}^\\])", r"\\\1", content)
-    # Handle tilde
-    content = re.sub(r"~", r"--", content)
+    # Escape standard LaTeX special characters
+    content = re.sub(r"([#\$%&_{}\\])", r"\\\1", content)
+
+    # Handle tilde (~) and caret (^)
+    content = re.sub(r"~", r"\\textasciitilde{}", content)
+    content = re.sub(r"\^", r"\\textasciicircum{}", content)
+
     # Escape square brackets
     content = content.replace("[", "{[}").replace("]", "{]}")
-    # Replace emojis dynamically
-    content = re.sub(r"([\U0001F300-\U0001FAF6\U0001F1E6-\U0001F1FF\u2660-\u2667\u2640-\u2642\uFE0F])", r"\\emoji{\1}",
-                     content)
+
+    # Replace emoji and other pictographic symbols
+    content = re.sub(
+        r"([\U0001F300-\U0001FAF6\U0001F1E6-\U0001F1FF\u2B00-\u2BFF\u2600-\u26FF\u2900-\u297F\u2700-\u2714])",
+        r"\\emoji{\1}",
+        content
+    )
+
+    # Replace punctuation and other special mathematical characters
+    content = re.sub(
+        r"([\u2E00-\u2E7F\u2200-\u22FF])",
+        r"\\charfont{\1}",
+        content
+    )
+
+    # Remove variation selector (U+FE0F) which may cause issues
+    content = content.replace("\uFE0F", "")
+
     return content
 
 
@@ -164,7 +186,7 @@ for i, tweet in tweets_df.iterrows():
     # Embed tweet text
     #ebook_content += f"## Tweet from {created_at.strftime('%B %d, %Y')}\n\n"
     tweet_text = preprocess_for_latex(tweet_text)
-    ebook_content += f"\\begin{{tcolorbox}}\n{tweet_text}\n"
+    ebook_content += f"\\begin{{{style_key}}}\n{tweet_text}\n"
 
 
     # Embed media if available
@@ -172,9 +194,9 @@ for i, tweet in tweets_df.iterrows():
     if media:
         ebook_content += f"{media}\n\n"
 
-    ebook_content += f"\\end{{tcolorbox}}\n\n"
+    ebook_content += f"\\end{{{style_key}}}\n\n"
 
-    if i == 800:
+    if i == 300:
         break
 
 # Save the ebook as a Markdown file
@@ -183,37 +205,36 @@ with open(output_ebook_path, "w", encoding="utf-8") as ebook_file:
 
 print(f"Ebook saved to {output_ebook_path}")
 
-if True:
-    import pypandoc
-    import os
-    import re
+import pypandoc
+import os
+import re
 
 
-    # Ensure the input file exists
-    if not os.path.exists(output_ebook_path):
-        raise FileNotFoundError(f"{output_ebook_path} not found!")
+# Ensure the input file exists
+if not os.path.exists(output_ebook_path):
+    raise FileNotFoundError(f"{output_ebook_path} not found!")
 
-    # Paths to the Markdown file and output PDF
-    pdf_file = output_ebook_file + ".pdf"
-
-
-    # Convert Markdown to PDF using pypandoc
-    # https://latex3.github.io/babel/guides/which-method-for-which-language.html
-    output = pypandoc.convert_file(
-        output_ebook_path,
-        to="pdf",
-        outputfile=pdf_file,
-        extra_args=[
-            "--pdf-engine=xelatex",
-            "--variable=mainfont:Noto Sans",
-            "--variable=CJKmainfont:Noto Sans JP",
-            #"--variable=mainfontfallback:Noto Emoji", #works only in lualatex
-            "--variable=geometry:margin=1in",
-            #"--from=markdown+raw_html+native_divs", # pandoc --list-extensions=markdown
-            "--metadata=lang:gr"]
-    )
+# Paths to the Markdown file and output PDF
+pdf_file = output_ebook_file + ".pdf"
 
 
-    print(f"PDF saved to {pdf_file}")
+# Convert Markdown to PDF using pypandoc
+# https://latex3.github.io/babel/guides/which-method-for-which-language.html
+output = pypandoc.convert_file(
+    output_ebook_path,
+    to="pdf",
+    outputfile=pdf_file,
+    extra_args=[
+        "--pdf-engine=xelatex",
+        #"--variable=mainfont:Noto Sans", #overwritten in the preamble
+        #"--variable=CJKmainfont:Noto Sans JP", #overwritten in the preamble
+        #"--variable=mainfontfallback:Noto Emoji", #works only in lualatex
+        "--variable=geometry:margin=1in",
+        #"--from=markdown+raw_html+native_divs", # pandoc --list-extensions=markdown
+        "--metadata=lang:gr"]
+)
+
+
+print(f"PDF saved to {pdf_file}")
 
 
