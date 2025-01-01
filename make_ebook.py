@@ -30,70 +30,25 @@ def embed_media(tweet_id_):
             # Single image centered
             media_md = (
                 f"\\begin{{center}}\n"
-                f"\\includegraphics[height=100pt]{{{media_files[0]}}}\n"
+                f"\\includegraphics[height=150pt]{{{media_files[0]}}}\n"
                 f"\\end{{center}}"
             )
-        elif num_files == 2:
-            # 1x2 grid for two images
-            media_md = (
-                "\\begin{figure}[H]\n"
-                "\\centering\n"
-                f"\\begin{{subfigure}}[b]{{0.48\\textwidth}}\n"
-                f"\\includegraphics[width=\\textwidth, height=\\textwidth, trim=50 50 50 50, clip]{{{media_files[0]}}}\n"
-                "\\caption{}\n"
-                "\\end{subfigure}\n"
-                "\\hfill\n"
-                f"\\begin{{subfigure}}[b]{{0.48\\textwidth}}\n"
-                f"\\includegraphics[width=\\textwidth, height=\\textwidth, trim=50 50 50 50, clip]{{{media_files[1]}}}\n"
-                "\\caption{}\n"
-                "\\end{subfigure}\n"
-                "\\end{figure}"
+        elif num_files in {2, 3, 4}:
+            # Flexible grid for 1x2, 1x3, or 2x2 layout
+            widths = {2: "0.48\\textwidth", 3: "0.32\\textwidth", 4: "0.48\\textwidth"}
+            subfigures = "\n".join(
+                f"\\begin{{subfigure}}[b]{{{widths[num_files]}}}\n"
+                f"\\begin{{center}}\n"
+                f"\\includegraphics[width=150pt, height=150pt, trim=10 10 10 10, clip]{{{media_files[i]}}}\n"
+                f"\\end{{center}}"
+                f"\\end{{subfigure}}"
+                + ("\n\\hfill" if i < num_files - 1 else "")
+                for i in range(num_files)
             )
-        elif num_files == 3:
-            # 1x3 grid for three images
             media_md = (
                 "\\begin{figure}[H]\n"
                 "\\centering\n"
-                f"\\begin{{subfigure}}[b]{{0.32\\textwidth}}\n"
-                f"\\includegraphics[width=\\textwidth, height=\\textwidth, trim=50 50 50 50, clip]{{{media_files[0]}}}\n"
-                "\\caption{}\n"
-                "\\end{subfigure}\n"
-                "\\hfill\n"
-                f"\\begin{{subfigure}}[b]{{0.32\\textwidth}}\n"
-                f"\\includegraphics[width=\\textwidth, height=\\textwidth, trim=50 50 50 50, clip]{{{media_files[1]}}}\n"
-                "\\caption{}\n"
-                "\\end{subfigure}\n"
-                "\\hfill\n"
-                f"\\begin{{subfigure}}[b]{{0.32\\textwidth}}\n"
-                f"\\includegraphics[width=\\textwidth, height=\\textwidth, trim=50 50 50 50, clip]{{{media_files[2]}}}\n"
-                "\\caption{}\n"
-                "\\end{subfigure}\n"
-                "\\end{figure}"
-            )
-        elif num_files == 4:
-            # 2x2 grid for four images
-            media_md = (
-                "\\begin{figure}[H]\n"
-                "\\centering\n"
-                f"\\begin{{subfigure}}[b]{{0.48\\textwidth}}\n"
-                f"\\includegraphics[width=\\textwidth, height=\\textwidth, trim=50 50 50 50, clip]{{{media_files[0]}}}\n"
-                "\\caption{}\n"
-                "\\end{subfigure}\n"
-                "\\hfill\n"
-                f"\\begin{{subfigure}}[b]{{0.48\\textwidth}}\n"
-                f"\\includegraphics[width=\\textwidth, height=\\textwidth, trim=50 50 50 50, clip]{{{media_files[1]}}}\n"
-                "\\caption{}\n"
-                "\\end{subfigure}\n"
-                "\\hfill\n"
-                f"\\begin{{subfigure}}[b]{{0.48\\textwidth}}\n"
-                f"\\includegraphics[width=\\textwidth, height=\\textwidth, trim=50 50 50 50, clip]{{{media_files[2]}}}\n"
-                "\\caption{}\n"
-                "\\end{subfigure}\n"
-                "\\hfill\n"
-                f"\\begin{{subfigure}}[b]{{0.48\\textwidth}}\n"
-                f"\\includegraphics[width=\\textwidth, height=\\textwidth, trim=50 50 50 50, clip]{{{media_files[3]}}}\n"
-                "\\caption{}\n"
-                "\\end{subfigure}\n"
+                f"{subfigures}\n"
                 "\\end{figure}"
             )
         else:
@@ -157,6 +112,7 @@ current_year = None
 for i, tweet in tweets_df.iterrows():
     # Extract tweet details
     tweet_text = remove_tco_links(tweet["full_text"])
+    tweet_text = re.sub(r'^"(.*)"$', r'\1', tweet_text)
     created_at = pd.to_datetime(tweet["created_at"])
     tweet_id = tweet["id"]
 
