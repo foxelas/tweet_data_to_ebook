@@ -1,9 +1,10 @@
 from pathlib import Path
 import pandas as pd
-from os.path import join as pathjoin
-from configuration import data_path, media_folder, tweets_csv_file, output_ebook_file, item_styles, style_key, \
-    color_palette
+import pypandoc
+import os
 import re
+from configuration import data_path, media_folder, tweets_csv_file, output_ebook_file, item_styles, style_key, \
+    color_palette, latex_preamble, latex_preamble_end
 
 # Paths to the input data and output folder
 media_path = Path(data_path) / media_folder  # Use pathlib for joining paths
@@ -107,31 +108,11 @@ def embed_media(tweet_id_):
         return media_md
 
 
-# LaTeX preamble for tcolorbox
-latex_preamble = r"""
-\usepackage{xeCJK}
-
-\usepackage{unicode-math} 
-\setmathfont{Noto Sans Math} 
-\setmainfont{DejaVu Sans Bold}
-\setCJKmainfont{Noto Sans Mono CJK SC}
-\newfontface\emojifont{Noto Color Emoji}
-\newfontface\mathfont{Noto Sans Math}
-
-\newcommand{\emoji}[1]{{\emojifont #1}}
-\newcommand{\charfont}[1]{{\mathfont #1}}
-
-
-\usepackage{float}
-\usepackage{subcaption}
-\usepackage{graphicx}
-
-\usepackage{xcolor}
-
-"""
-
+# Define the LaTeX preamble
+latex_preamble = latex_preamble
 latex_preamble += color_palette
 latex_preamble += item_styles.get(style_key, "")
+latex_preamble += latex_preamble_end
 container_tag = style_key
 
 # Build the ebook content
@@ -171,6 +152,7 @@ def preprocess_for_latex(content):
 
 
 # Group tweets into chapters (you can customize this logic)
+flag = False
 current_year = None
 for i, tweet in tweets_df.iterrows():
     # Extract tweet details
@@ -180,13 +162,17 @@ for i, tweet in tweets_df.iterrows():
 
     # Create a new chapter for each year
     if current_year != created_at.year:
+        flag = False
         current_year = created_at.year
         ebook_content += f"\n\n# Chapter {current_year}\n\n"
+
+    flag = not flag
+    color = "primary" if flag else "secondary"
 
     # Embed tweet text
     #ebook_content += f"## Tweet from {created_at.strftime('%B %d, %Y')}\n\n"
     tweet_text = preprocess_for_latex(tweet_text)
-    ebook_content += f"\\begin{{{style_key}}}\n{tweet_text}\n"
+    ebook_content += f"\\begin{{{style_key}}}{{{color}}}\n{tweet_text}\n"
 
 
     # Embed media if available
@@ -204,10 +190,6 @@ with open(output_ebook_path, "w", encoding="utf-8") as ebook_file:
     ebook_file.write(ebook_content)
 
 print(f"Ebook saved to {output_ebook_path}")
-
-import pypandoc
-import os
-import re
 
 
 # Ensure the input file exists

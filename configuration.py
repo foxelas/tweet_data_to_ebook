@@ -6,15 +6,44 @@ media_folder = 'tweets_media'
 output_ebook_file = 'tweets_ebook'
 
 
+# LaTeX preamble
+latex_preamble = r"""
+```{=latex}
+\usepackage{xeCJK}
+
+\usepackage{unicode-math} 
+\setmathfont{Noto Sans Math} 
+\setmainfont{DejaVu Sans Bold}
+\setCJKmainfont{Noto Sans Mono CJK SC}
+\newfontface\emojifont{Noto Color Emoji}
+\newfontface\mathfont{Noto Sans Math}
+
+\newcommand{\emoji}[1]{{\emojifont #1}}
+\newcommand{\charfont}[1]{{\mathfont #1}}
+
+
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{graphicx}
+
+\usepackage{xcolor}
+
+"""
+
+latex_preamble_end = "\n```"
+
 color_palette = r"""
-\definecolor{primary}{HTML}{88EABB}
-\definecolor{secondary}{HTML}{4A90E2}
+\definecolor{primary}{HTML}{D8BFD8}    % Pastel Purple (Thistle)
+\definecolor{secondary}{HTML}{ADD8E6}  % Pastel Blue (Light Blue)
+\definecolor{accent}{HTML}{E6E6FA}     % Lavender
+\definecolor{tertiary}{HTML}{88EABB}   % Soft Mint Green
+\definecolor{highlight}{HTML}{FAF0FF}  % Pale Lavender Tint
 """
 
 
 
 item_styles = {
-    "tcolorbox": r"""
+    "custombox": r"""
 \usepackage{tcolorbox}
 \tcbset{
     sharp corners,
@@ -24,6 +53,8 @@ item_styles = {
     width=\textwidth,
     enlarge left by=5mm
 }
+
+\newtcolorbox{custombox}[2][]{colframe=#2!75!black, colback=#2!10!white,#1}
 """,
 
     "newchat": r"""\usepackage{tikz}
