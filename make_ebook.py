@@ -24,25 +24,97 @@ def embed_media(tweet_id_):
     media_files = [preprocess_for_latex(file.as_posix()) for file in media_files]
     if media_files:
         num_files = len(media_files)
-
-        # Generate Markdown for media grid
         if num_files == 1:
-            # Single image
-            media_md = f"\\begin{{center}}\n\\includegraphics[height=100pt]{{{media_files[0]}}}\n\\end{{center}}"
+            # Single image centered
+            media_md = (
+                f"\\begin{{center}}\n"
+                f"\\includegraphics[height=100pt]{{{media_files[0]}}}\n"
+                f"\\end{{center}}"
+            )
+        elif num_files == 2:
+            # 1x2 grid for two images
+            media_md = (
+                "\\begin{figure}[H]\n"
+                "\\centering\n"
+                f"\\begin{{subfigure}}[b]{{0.48\\textwidth}}\n"
+                f"\\includegraphics[width=\\textwidth, height=\\textwidth, trim=50 50 50 50, clip]{{{media_files[0]}}}\n"
+                "\\caption{}\n"
+                "\\end{subfigure}\n"
+                "\\hfill\n"
+                f"\\begin{{subfigure}}[b]{{0.48\\textwidth}}\n"
+                f"\\includegraphics[width=\\textwidth, height=\\textwidth, trim=50 50 50 50, clip]{{{media_files[1]}}}\n"
+                "\\caption{}\n"
+                "\\end{subfigure}\n"
+                "\\end{figure}"
+            )
+        elif num_files == 3:
+            # 1x3 grid for three images
+            media_md = (
+                "\\begin{figure}[H]\n"
+                "\\centering\n"
+                f"\\begin{{subfigure}}[b]{{0.32\\textwidth}}\n"
+                f"\\includegraphics[width=\\textwidth, height=\\textwidth, trim=50 50 50 50, clip]{{{media_files[0]}}}\n"
+                "\\caption{}\n"
+                "\\end{subfigure}\n"
+                "\\hfill\n"
+                f"\\begin{{subfigure}}[b]{{0.32\\textwidth}}\n"
+                f"\\includegraphics[width=\\textwidth, height=\\textwidth, trim=50 50 50 50, clip]{{{media_files[1]}}}\n"
+                "\\caption{}\n"
+                "\\end{subfigure}\n"
+                "\\hfill\n"
+                f"\\begin{{subfigure}}[b]{{0.32\\textwidth}}\n"
+                f"\\includegraphics[width=\\textwidth, height=\\textwidth, trim=50 50 50 50, clip]{{{media_files[2]}}}\n"
+                "\\caption{}\n"
+                "\\end{subfigure}\n"
+                "\\end{figure}"
+            )
+        elif num_files == 4:
+            # 2x2 grid for four images
+            media_md = (
+                "\\begin{figure}[H]\n"
+                "\\centering\n"
+                f"\\begin{{subfigure}}[b]{{0.48\\textwidth}}\n"
+                f"\\includegraphics[width=\\textwidth, height=\\textwidth, trim=50 50 50 50, clip]{{{media_files[0]}}}\n"
+                "\\caption{}\n"
+                "\\end{subfigure}\n"
+                "\\hfill\n"
+                f"\\begin{{subfigure}}[b]{{0.48\\textwidth}}\n"
+                f"\\includegraphics[width=\\textwidth, height=\\textwidth, trim=50 50 50 50, clip]{{{media_files[1]}}}\n"
+                "\\caption{}\n"
+                "\\end{subfigure}\n"
+                "\\vspace{{0.5cm}}\n"
+                f"\\begin{{subfigure}}[b]{{0.48\\textwidth}}\n"
+                f"\\includegraphics[width=\\textwidth, height=\\textwidth, trim=50 50 50 50, clip]{{{media_files[2]}}}\n"
+                "\\caption{}\n"
+                "\\end{subfigure}\n"
+                "\\hfill\n"
+                f"\\begin{{subfigure}}[b]{{0.48\\textwidth}}\n"
+                f"\\includegraphics[width=\\textwidth, height=\\textwidth, trim=50 50 50 50, clip]{{{media_files[3]}}}\n"
+                "\\caption{}\n"
+                "\\end{subfigure}\n"
+                "\\end{figure}"
+            )
         else:
-            # Vertical list for other cases
-            media_md = "\n".join([f"\\begin{{center}}\n\\includegraphics[height=100pt]{{{file}}}\n\\end{{center}}" for file in media_files])
-            #media_md = "\n".join([f"![]({file}){{height=200px}}" for file in media_files])
+            # Fallback: Vertical list for more than 4 images
+            media_md = "\n".join(
+                [
+                    f"\\begin{{center}}\n\\includegraphics[height=100pt]{{{file}}}\n\\end{{center}}"
+                    for file in media_files
+                ]
+            )
 
         return media_md
-
-    return ""
 
 
 # LaTeX preamble for tcolorbox
 latex_preamble = r"""
 \usepackage{xeCJK}
+\setmainfont{Noto Sans}
+\setCJKmainfont{Noto Sans JP}
+\newfontface\emojifont{Noto Emoji}
+\newcommand{\emoji}[1]{{\emojifont #1}}
 
+\usepackage{float}
 \usepackage{subcaption}
 \usepackage{graphicx}
 
@@ -70,7 +142,9 @@ def preprocess_for_latex(content):
     content = re.sub(r"~", r"--", content)
     # Escape square brackets
     content = content.replace("[", "{[}").replace("]", "{]}")
-
+    # Replace emojis dynamically
+    content = re.sub(r"([\U0001F300-\U0001FAF6\U0001F1E6-\U0001F1FF\u2660-\u2667\u2640-\u2642\uFE0F])", r"\\emoji{\1}",
+                     content)
     return content
 
 
@@ -100,8 +174,8 @@ for i, tweet in tweets_df.iterrows():
 
     ebook_content += f"\\end{{tcolorbox}}\n\n"
 
-    #if i == 200:
-    #    break
+    if i == 800:
+        break
 
 # Save the ebook as a Markdown file
 with open(output_ebook_path, "w", encoding="utf-8") as ebook_file:
