@@ -5,6 +5,7 @@ import os
 import re
 from configuration import data_path, media_folder, tweets_csv_file, output_ebook_file, item_styles, style_key, \
     color_palette, latex_preamble, latex_preamble_end, text_title, chapter_title
+from get_tweets import prepare_files
 
 # Paths to the input data and output folder
 media_path = Path(data_path) / media_folder  # Use pathlib for joining paths
@@ -13,10 +14,12 @@ output_ebook_path = output_ebook_file + ".md"  # Markdown format for the ebook
 
 # Load the sorted and filtered tweets
 if os.path.exists("selected_tweets.csv"):
-    tweets_df = pd.read_csv(tweets_csv_file)
+    print("selected_tweets.csv found, reading from that one.")
+    tweets_df = pd.read_csv("selected_tweets.csv")
 else:
+    print("selected_tweets.csv not found, preparing files.")
     if not os.path.exists(tweets_csv_file):
-        raise FileNotFoundError(f"{tweets_csv_file} not found! Run get_tweets.py first.")
+        prepare_files(min_favorite_count=0)
     tweets_df = pd.read_csv(tweets_csv_file)
 
 # Function to remove t.co links from the tweet text
