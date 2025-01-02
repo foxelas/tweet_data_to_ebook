@@ -1,10 +1,12 @@
 import json
 import pandas as pd
 from os.path import join as pathjoin
-from configuration import data_path, tweets_file, tweets_csv_file
+from configuration import data_path, tweets_file, tweets_csv_file, min_date, max_date, min_favorite_count
 
 
-def prepare_files(min_favorite_count=2, max_date='2023-01-01', min_date='2015-01-01'):
+def prepare_files(min_favorite_count_=min_favorite_count,
+                  max_date_=max_date,
+                  min_date_=min_date):
     # Load and parse JSON data from the file
     file_path = pathjoin(data_path, tweets_file)
     with open(file_path, "r", encoding="utf-8") as file:
@@ -43,9 +45,9 @@ def prepare_files(min_favorite_count=2, max_date='2023-01-01', min_date='2015-01
     tweets_df = tweets_df[
         tweets_df['in_reply_to_status_id'].isnull() &  # Exclude replies
         ~tweets_df['full_text'].str.startswith('RT') &  # Exclude retweets
-        (tweets_df['favorite_count'] > min_favorite_count) &  # Exclude low-engagement tweets
-        (tweets_df['created_at'] < max_date) & # Exclude tweets after max date
-        (tweets_df['created_at'] > min_date)  # Exclude tweets before min date
+        (tweets_df['favorite_count'] > min_favorite_count_) &  # Exclude low-engagement tweets
+        (tweets_df['created_at'] < max_date_) &  # Exclude tweets after max date
+        (tweets_df['created_at'] > min_date_)  # Exclude tweets before min date
         ].sort_values(by='created_at', ascending=True)
 
     # Save the filtered tweets and provide a summary

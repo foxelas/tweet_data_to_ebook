@@ -6,9 +6,12 @@ output_ebook_file = 'tweets_ebook'
 
 text_title = "Ημερολόγιο Ιαπωνίας"
 chapter_title = "Κεφάλαιο"
+min_favorite_count = 0
+max_date = '2023-01-01'
+min_date='2015-01-01'
 
 # LaTeX preamble
-latex_preamble = r"""
+latex_preamble_start = r"""
 ```{=latex}
 \usepackage{xeCJK}
 
