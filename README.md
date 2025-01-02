@@ -14,10 +14,13 @@ The motivation behind this project was to have a physical copy of my tweets, sin
 Uses fonts that support Greek and Japanese (CJK) characters, as well as emojis.
 
 ## Usage
-Download your tweets archive from Twitter (it might take a while).
-Save the archive in the same folder as this script.
-Change the `configuration.py` dictionary to your liking, especially `data_path` to reflect the path to your tweets archive.  
-Then, just run the script.
+- Download your tweets archive from Twitter (it might take a while).
+
+- Save the archive in the same folder as this script.
+
+- Change the `configuration.py` dictionary to your liking, especially `data_path` to reflect the path to your tweets archive.  
+
+- Then, just run the script.
 ```bash
 python tweets2ebook.py 
 ```
