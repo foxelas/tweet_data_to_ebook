@@ -4,7 +4,7 @@ import pypandoc
 import os
 import re
 from configuration import data_path, media_folder, tweets_csv_file, output_ebook_file, item_styles, style_key, \
-    color_palette, latex_preamble, latex_preamble_end
+    color_palette, latex_preamble, latex_preamble_end, text_title, chapter_title
 
 # Paths to the input data and output folder
 media_path = Path(data_path) / media_folder  # Use pathlib for joining paths
@@ -12,7 +12,12 @@ media_folder = media_path  # Ensure media_folder is a Path object
 output_ebook_path = output_ebook_file + ".md"  # Markdown format for the ebook
 
 # Load the sorted and filtered tweets
-tweets_df = pd.read_csv(tweets_csv_file)
+if os.path.exists("selected_tweets.csv"):
+    tweets_df = pd.read_csv(tweets_csv_file)
+else:
+    if not os.path.exists(tweets_csv_file):
+        raise FileNotFoundError(f"{tweets_csv_file} not found! Run get_tweets.py first.")
+    tweets_df = pd.read_csv(tweets_csv_file)
 
 # Function to remove t.co links from the tweet text
 def remove_tco_links(text):
@@ -29,9 +34,11 @@ def embed_media(tweet_id_):
         if num_files == 1:
             # Single image centered
             media_md = (
-                f"\\begin{{center}}\n"
+                "\\begin{figure}[H]\n"
+                "\\begin{flushright}\n"
                 f"\\includegraphics[height=150pt]{{{media_files[0]}}}\n"
-                f"\\end{{center}}"
+                "\\end{flushright}\n"
+                "\\end{figure}"
             )
         elif num_files in {2, 3, 4}:
             # Flexible grid for 1x2, 1x3, or 2x2 layout
@@ -39,7 +46,7 @@ def embed_media(tweet_id_):
             subfigures = "\n".join(
                 f"\\begin{{subfigure}}[b]{{{widths[num_files]}}}\n"
                 f"\\begin{{center}}\n"
-                f"\\includegraphics[width=150pt, height=150pt, trim=10 10 10 10, clip]{{{media_files[i]}}}\n"
+                f"\\includegraphics[width=\\textwidth, height=\\textwidth, trim=10 10 10 10, clip]{{{media_files[i]}}}\n"
                 f"\\end{{center}}"
                 f"\\end{{subfigure}}"
                 + ("\n\\hfill" if i < num_files - 1 else "")
@@ -47,8 +54,9 @@ def embed_media(tweet_id_):
             )
             media_md = (
                 "\\begin{figure}[H]\n"
-                "\\centering\n"
+                "\\begin{flushright}\n"
                 f"{subfigures}\n"
+                "\\end{flushright}\n"
                 "\\end{figure}"
             )
         else:
@@ -61,6 +69,7 @@ def embed_media(tweet_id_):
             )
 
         return media_md
+    return ""
 
 
 # Define the LaTeX preamble
@@ -69,11 +78,6 @@ latex_preamble += color_palette
 latex_preamble += item_styles.get(style_key, "")
 latex_preamble += latex_preamble_end
 container_tag = style_key
-
-# Build the ebook content
-ebook_content = "---\nheader-includes: |\n  " + latex_preamble.replace("\n", "\n  ") + "\n---\n"
-ebook_content += "# My Tweet Ebook\n\n"
-
 
 def preprocess_for_latex(content):
     # Escape standard LaTeX special characters
@@ -88,7 +92,7 @@ def preprocess_for_latex(content):
 
     # Replace emoji and other pictographic symbols
     content = re.sub(
-        r"([\U0001F300-\U0001FAF6\U0001F1E6-\U0001F1FF\u2B00-\u2BFF\u2600-\u26FF\u2900-\u297F\u2700-\u2714])",
+        r"([\U0001F300-\U0001FAF6\U0001F1E6-\U0001F1FF\u2B00-\u2BFF\u2600-\u26FF\u2900-\u297F\u2700-\u27FF])",
         r"\\emoji{\1}",
         content
     )
@@ -105,6 +109,9 @@ def preprocess_for_latex(content):
 
     return content
 
+# Build the ebook content
+ebook_content = "---\nheader-includes: |\n  " + latex_preamble.replace("\n", "\n  ") + "\n---\n"
+ebook_content += "# " + text_title + "\n"
 
 # Group tweets into chapters (you can customize this logic)
 flag = False
@@ -120,26 +127,30 @@ for i, tweet in tweets_df.iterrows():
     if current_year != created_at.year:
         flag = False
         current_year = created_at.year
-        ebook_content += f"\n\n# Chapter {current_year}\n\n"
-
-    flag = not flag
-    color = "primary" if flag else "secondary"
+        ebook_content += f"\n\n## {chapter_title} {current_year}\n\n"
 
     # Embed tweet text
     #ebook_content += f"## Tweet from {created_at.strftime('%B %d, %Y')}\n\n"
     tweet_text = preprocess_for_latex(tweet_text)
-    ebook_content += f"\\begin{{{style_key}}}{{{color}}}\n{tweet_text}\n"
-
-
-    # Embed media if available
     media = embed_media(tweet_id)
-    if media:
-        ebook_content += f"{media}\n\n"
 
-    ebook_content += f"\\end{{{style_key}}}\n\n"
+    flag = not flag
+    if style_key == "newchat":
+        if not flag:
+            ebook_content += f"\\begin{{{style_key}}}{{{prev_media}}}{{{media}}}\n{prev_text}\n{tweet_text}\n\\end{{{style_key}}}\n\n"
+        else:
+            prev_text = tweet_text
+            prev_media = media
 
-    if i == 300:
-        break
+    elif style_key == "custombox":
+        color = "primary" if flag else "secondary"
+        alignment = "left" if flag else "right"
+        if alignment == "left":
+            media = re.sub(r"{flushright}", r"{flushleft}", media)
+        ebook_content += f"\\begin{{{style_key}}}{{{color}}}{{{alignment}}}\n{tweet_text}\n{media}\\end{{{style_key}}}\n\n"
+
+    #if i == 300:
+    #    break
 
 # Save the ebook as a Markdown file
 with open(output_ebook_path, "w", encoding="utf-8") as ebook_file:

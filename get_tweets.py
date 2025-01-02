@@ -9,18 +9,10 @@ file_path = pathjoin(data_path, tweets_file)
 with open(file_path, "r", encoding="utf-8") as file:
     content = file.read()
 
-# Remove JavaScript variable assignment and keep the JSON part
-# Assuming the prefix ends with `= [`
-json_content = content.split("=", 1)[1].strip()
-
-# Save the cleaned JSON to a new file (optional)
-cleaned_file_path = tweets_cleaned_file
-with open(cleaned_file_path, "w", encoding="utf-8") as cleaned_file:
-    cleaned_file.write(json_content)
-
-# Now load the cleaned JSON file
-with open(cleaned_file_path, "r", encoding="utf-8") as cleaned_file:
-    data = json.load(cleaned_file)
+    # Remove JavaScript variable assignment and keep the JSON part
+    # Assuming the prefix ends with `= [`
+    content = content.split("=", 1)[1].strip()
+    data = json.loads(content)
 
 tweets = []
 
