@@ -11,6 +11,8 @@
 This is a simple script that generates an ebook of your tweets archive. 
 The motivation behind this project was to have a physical copy of my tweets, since I moved away from Twitter (now X).
 
+Uses fonts that support Greek and Japanese (CJK) characters, as well as emojis.
+
 ## Usage
 Download your tweets archive from Twitter (it might take a while).
 Save the archive in the same folder as this script.

@@ -4,10 +4,8 @@ src/tokens.json
 dependencies_layer/*
 twitter-*/*
 *.csv
-*.json
-*.md
-*.pdf
-
+tweets_ebook.md
+tweets_ebook.pdf
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
